@@ -33,7 +33,7 @@ const filteredWorkshops = computed(() => {
       return session?.type === 'family'
     })
   } else if (filterType.value === 'available') {
-    result = result.filter(w => w.booked < w.capacity)
+    result = result.filter(w => workshopStore.getConfirmedCountByWorkshop(w.id) < w.capacity)
   }
   if (searchQuery.value) {
     const q = searchQuery.value.toLowerCase()
@@ -155,14 +155,21 @@ function submitBooking() {
   bookingForm.value = { visitorId: '', childName: '', childAge: 6 }
 }
 
-function confirmBooking(bookingId: string) {
+function refreshBookingMaterials(bookingId: string) {
   const booking = workshopStore.bookings.find(b => b.id === bookingId)
-  if (booking && !booking.confirmed) {
-    const matCheck = workshopStore.checkMaterials(booking.workshopId, 1)
-    if (matCheck.hasAllMaterials) {
-      workshopStore.confirmBooking(bookingId)
-      workshopStore.useMaterials(booking.workshopId, 1)
-    }
+  if (!booking) return
+  const matCheck = workshopStore.checkMaterials(booking.workshopId, 1)
+  workshopStore.updateBookingMaterials(bookingId, matCheck)
+}
+
+function confirmBooking(bookingId: string) {
+  refreshBookingMaterials(bookingId)
+  const booking = workshopStore.bookings.find(b => b.id === bookingId)
+  if (!booking || booking.confirmed) return
+  if (!booking.hasAllMaterials || booking.missingMaterials.length > 0) return
+  const ok = workshopStore.confirmBooking(bookingId)
+  if (ok) {
+    workshopStore.useMaterials(booking.workshopId, 1)
   }
 }
 
@@ -240,12 +247,12 @@ function cancelBooking(bookingId: string) {
               </div>
               <div class="flex items-center gap-1 text-xs text-museum-muted">
                 <Users class="w-3 h-3 text-museum-gold" />
-                {{ workshop.booked }}/{{ workshop.capacity }}
+                {{ workshopStore.getConfirmedCountByWorkshop(workshop.id) }}/{{ workshop.capacity }}
               </div>
             </div>
 
             <div class="mt-3">
-              <CapacityBar :current="workshop.booked" :max="workshop.capacity" size="sm" />
+              <CapacityBar :current="workshopStore.getConfirmedCountByWorkshop(workshop.id)" :max="workshop.capacity" size="sm" />
             </div>
           </div>
         </div>
@@ -371,15 +378,21 @@ function cancelBooking(bookingId: string) {
                 <span class="text-[10px] text-museum-orange bg-museum-orange/10 px-1.5 py-0.5 rounded">待确认</span>
               </div>
               <div class="text-[10px] text-museum-orange mb-2">
-                缺少材料：{{ booking.missingMaterials.join('、') }}
+                缺少材料：{{ booking.missingMaterials.join('、') || '暂无' }}
               </div>
               <div class="flex gap-2">
                 <button
-                  :disabled="!materialCheck.hasAllMaterials"
+                  :disabled="booking.hasAllMaterials === false || booking.missingMaterials.length > 0"
                   class="flex-1 py-1.5 rounded text-xs font-medium bg-museum-green text-white hover:bg-museum-green/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                   @click="confirmBooking(booking.id)"
                 >
-                  材料补齐后确认
+                  {{ booking.hasAllMaterials && booking.missingMaterials.length === 0 ? '确认席位' : '请先补齐材料' }}
+                </button>
+                <button
+                  class="py-1.5 px-2 rounded text-xs border border-museum-border/40 text-museum-blue hover:bg-museum-blue/5 transition-colors"
+                  @click="refreshBookingMaterials(booking.id)"
+                >
+                  检查材料
                 </button>
                 <button class="flex-1 py-1.5 rounded text-xs border border-museum-border/40 text-museum-muted hover:bg-museum-bg transition-colors" @click="cancelBooking(booking.id)">
                   取消预约

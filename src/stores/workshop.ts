@@ -36,6 +36,14 @@ export const useWorkshopStore = defineStore('workshop', () => {
     return (workshopId: string) => bookings.value.filter(b => b.workshopId === workshopId && b.confirmed)
   })
 
+  const pendingBookingsByWorkshop = computed(() => {
+    return (workshopId: string) => bookings.value.filter(b => b.workshopId === workshopId && !b.confirmed)
+  })
+
+  const getConfirmedCountByWorkshop = (workshopId: string) => {
+    return confirmedBookingsByWorkshop.value(workshopId).length
+  }
+
   function checkMaterials(workshopId: string, count: number): WorkshopMaterialCheckResult {
     const workshop = getWorkshopById(workshopId)
     if (!workshop) return { hasAllMaterials: false, missingMaterials: [] }
@@ -64,7 +72,7 @@ export const useWorkshopStore = defineStore('workshop', () => {
   function checkCapacity(workshopId: string): { canBook: boolean; availableSpots: number } {
     const workshop = getWorkshopById(workshopId)
     if (!workshop) return { canBook: false, availableSpots: 0 }
-    const confirmed = confirmedBookingsByWorkshop.value(workshopId).length
+    const confirmed = getConfirmedCountByWorkshop(workshopId)
     const available = workshop.capacity - confirmed
     return { canBook: available > 0, availableSpots: available }
   }
@@ -76,36 +84,30 @@ export const useWorkshopStore = defineStore('workshop', () => {
       createdAt: new Date().toISOString(),
     }
     bookings.value.push(newBooking)
-    if (newBooking.confirmed) {
-      const workshop = getWorkshopById(booking.workshopId)
-      if (workshop) {
-        workshop.booked += 1
-      }
-    }
     return newBooking
   }
 
-  function confirmBooking(bookingId: string) {
+  function updateBookingMaterials(bookingId: string, materialCheck: WorkshopMaterialCheckResult) {
     const booking = bookings.value.find(b => b.id === bookingId)
-    if (booking && !booking.confirmed) {
-      booking.confirmed = true
-      const workshop = getWorkshopById(booking.workshopId)
-      if (workshop) {
-        workshop.booked += 1
-      }
+    if (booking) {
+      booking.hasAllMaterials = materialCheck.hasAllMaterials
+      booking.missingMaterials = materialCheck.missingMaterials
     }
+  }
+
+  function confirmBooking(bookingId: string): boolean {
+    const booking = bookings.value.find(b => b.id === bookingId)
+    if (!booking || booking.confirmed) return false
+    if (!booking.hasAllMaterials || booking.missingMaterials.length > 0) return false
+    const cap = checkCapacity(booking.workshopId)
+    if (!cap.canBook) return false
+    booking.confirmed = true
+    return true
   }
 
   function cancelBooking(bookingId: string) {
     const idx = bookings.value.findIndex(b => b.id === bookingId)
     if (idx >= 0) {
-      const booking = bookings.value[idx]
-      if (booking.confirmed) {
-        const workshop = getWorkshopById(booking.workshopId)
-        if (workshop) {
-          workshop.booked = Math.max(0, workshop.booked - 1)
-        }
-      }
       bookings.value.splice(idx, 1)
     }
   }
@@ -140,6 +142,8 @@ export const useWorkshopStore = defineStore('workshop', () => {
     bookingsByWorkshop,
     bookingsByVisitor,
     confirmedBookingsByWorkshop,
+    pendingBookingsByWorkshop,
+    getConfirmedCountByWorkshop,
     getWorkshopById,
     getMaterialById,
     getMaterialByName,
@@ -147,6 +151,7 @@ export const useWorkshopStore = defineStore('workshop', () => {
     checkAge,
     checkCapacity,
     addBooking,
+    updateBookingMaterials,
     confirmBooking,
     cancelBooking,
     useMaterials,
