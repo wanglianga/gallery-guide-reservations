@@ -62,7 +62,7 @@ export interface GroupReservation {
 }
 
 export type SlotStatus = 'available' | 'warning' | 'full'
-export type OverCapacityAction = 'suggest-next' | 'self-guided' | 'waitlist'
+export type OverCapacityAction = 'suggest-next' | 'self-guided'
 
 export interface Exhibition {
   id: string

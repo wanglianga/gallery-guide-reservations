@@ -62,13 +62,7 @@ export const useGalleryFlowStore = defineStore('galleryFlow', () => {
   }
 
   function getOverCapacityActions(slot: GalleryTimeSlot): OverCapacityAction[] {
-    const actions: OverCapacityAction[] = []
-    actions.push('suggest-next')
-    actions.push('self-guided')
-    if (occupancyRate(slot) < 1.1) {
-      actions.push('waitlist')
-    }
-    return actions
+    return ['suggest-next', 'self-guided']
   }
 
   function findNextAvailableSlot(date: string, galleryId: string, fromStartTime: string): GalleryTimeSlot | null {
@@ -129,7 +123,6 @@ export const useGalleryFlowStore = defineStore('galleryFlow', () => {
   const overCapacityActionLabel: Record<OverCapacityAction, { text: string; desc: string; icon: string }> = {
     'suggest-next': { text: '建议下一场', desc: '推荐后续空闲时段', icon: '⏭' },
     'self-guided': { text: '改为自助导览', desc: '提供语音导览设备', icon: '🎧' },
-    'waitlist': { text: '加入候补', desc: '有空位时自动通知', icon: '📋' },
   }
 
   return {

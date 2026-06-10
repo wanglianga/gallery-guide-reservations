@@ -3,7 +3,7 @@ import { ref, computed } from 'vue'
 import {
   Building2, Users, UserSquare2, AlertCircle, CalendarDays, Clock,
   ChevronDown, ChevronUp, Filter, Phone, ShieldAlert,
-  ArrowRight, Headphones, BookMarked, X, CheckCircle2, Info
+  ArrowRight, Headphones, X, CheckCircle2, Info
 } from 'lucide-vue-next'
 import { useGalleryFlowStore } from '@/stores/galleryFlow'
 import { galleries, exhibitions } from '@/mock/data'
@@ -132,7 +132,6 @@ function occupancyBgClass(rate: number) {
 const actionIcon = {
   'suggest-next': ArrowRight,
   'self-guided': Headphones,
-  'waitlist': BookMarked,
 }
 </script>
 

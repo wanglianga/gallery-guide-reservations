@@ -192,6 +192,28 @@ export const galleryTimeSlots: GalleryTimeSlot[] = (() => {
       }
     }
   }
+
+  const todayStr = fmt(today)
+  const g1Slots = slots.filter(s => s.date === todayStr && s.galleryId === 'g1')
+  if (g1Slots.length >= 3) {
+    g1Slots[1].individualBooked = 32
+    g1Slots[1].groupBooked = 30
+    g1Slots[1].groupReservations = [
+      { id: 'gr-force-1', groupName: '海外华人艺术交流团', headcount: 22, contactName: '陈导', contactPhone: '139****8899', confirmed: true },
+      { id: 'gr-force-2', groupName: '市文化局考察组', headcount: 8, contactName: '王主任', contactPhone: '138****1122', confirmed: true },
+    ]
+    g1Slots[2].individualBooked = 40
+    g1Slots[2].groupBooked = 25
+    g1Slots[2].groupReservations = [
+      { id: 'gr-force-3', groupName: '国际博物馆协会参访团', headcount: 25, contactName: 'Lisa', contactPhone: '137****6677', confirmed: true },
+    ]
+  }
+  const g3Slots = slots.filter(s => s.date === todayStr && s.galleryId === 'g3')
+  if (g3Slots.length >= 5) {
+    g3Slots[3].individualBooked = 28
+    g3Slots[3].groupBooked = 22
+  }
+
   return slots
 })()
 
