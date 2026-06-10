@@ -121,7 +121,7 @@ const recentFeedbacks = computed(() =>
 const ratingDistribution = computed(() => {
   const dist = [0, 0, 0, 0, 0]
   feedbackStore.feedbacks.forEach(f => { dist[f.rating - 1]++ })
-  return dist
+  return dist.reverse()
 })
 
 const maxRatingCount = computed(() => Math.max(...ratingDistribution.value, 1))
