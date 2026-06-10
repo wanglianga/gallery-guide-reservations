@@ -1,12 +1,13 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import type { Visitor, AccessibilityNeed, SessionLanguage } from '@/types'
-import { visitors as mockVisitors } from '@/mock/data'
+import type { Visitor, AccessibilityNeed, SessionLanguage, RelocationRecord, RelocationType } from '@/types'
+import { visitors as mockVisitors, relocationRecords as mockRelocations } from '@/mock/data'
 
 export const useVisitorStore = defineStore('visitor', () => {
   const visitors = ref<Visitor[]>([...mockVisitors])
   const searchQuery = ref('')
   const filterSessionId = ref('')
+  const relocationRecords = ref<RelocationRecord[]>([...mockRelocations])
 
   const filteredVisitors = computed(() => {
     let result = visitors.value
@@ -61,5 +62,43 @@ export const useVisitorStore = defineStore('visitor', () => {
     filterSessionId.value = sessionId
   }
 
-  return { visitors, searchQuery, filterSessionId, filteredVisitors, visitorsBySession, visitorStatsBySession, addVisitor, markLate, setSearchQuery, setFilterSessionId }
+  function getRelocationsByVisitor(visitorId: string) {
+    return relocationRecords.value.filter(r => r.visitorId === visitorId)
+  }
+
+  function getRelocationsBySession(sessionId: string) {
+    return relocationRecords.value.filter(r => r.originalSessionId === sessionId || r.newSessionId === sessionId)
+  }
+
+  function addRelocation(relocation: Omit<RelocationRecord, 'id' | 'createdAt'>) {
+    const newRecord: RelocationRecord = {
+      ...relocation,
+      id: `rr${Date.now()}`,
+      createdAt: new Date().toISOString(),
+    }
+    relocationRecords.value.push(newRecord)
+
+    if (relocation.type === 'next-session' && relocation.newSessionId) {
+      const visitor = visitors.value.find(v => v.id === relocation.visitorId)
+      if (visitor) {
+        visitor.sessionId = relocation.newSessionId
+        visitor.isLate = false
+        visitor.lateMinutes = 0
+      }
+    } else if (relocation.type === 'tail-join') {
+      const visitor = visitors.value.find(v => v.id === relocation.visitorId)
+      if (visitor) {
+        visitor.isLate = true
+      }
+    } else if (relocation.type === 'audio-guide') {
+      const visitor = visitors.value.find(v => v.id === relocation.visitorId)
+      if (visitor) {
+        visitor.sessionId = ''
+      }
+    }
+
+    return newRecord
+  }
+
+  return { visitors, searchQuery, filterSessionId, relocationRecords, filteredVisitors, visitorsBySession, visitorStatsBySession, addVisitor, markLate, setSearchQuery, setFilterSessionId, getRelocationsByVisitor, getRelocationsBySession, addRelocation }
 })

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useRoute } from 'vue-router'
 import { computed } from 'vue'
-import { LayoutDashboard, CalendarRange, Users, BarChart3, ChevronLeft, ChevronRight, Globe2, Building2 } from 'lucide-vue-next'
+import { LayoutDashboard, CalendarRange, Users, BarChart3, ChevronLeft, ChevronRight, Globe2, Building2, Palette } from 'lucide-vue-next'
 import { useAppStore } from '@/stores/app'
 
 const route = useRoute()
@@ -13,6 +13,7 @@ const navItems = [
   { path: '/foreign-guide', label: '外语导览匹配', icon: Globe2 },
   { path: '/gallery-flow', label: '展厅人流管理', icon: Building2 },
   { path: '/visitors', label: '观众管理', icon: Users },
+  { path: '/workshop', label: '手作课程', icon: Palette },
   { path: '/statistics', label: '统计总览', icon: BarChart3 },
 ]
 

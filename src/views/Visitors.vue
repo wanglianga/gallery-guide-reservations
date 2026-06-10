@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { Search, Plus, Clock, AlertCircle, Baby, Accessibility, Phone, UserPlus, X, Users, Eye } from 'lucide-vue-next'
+import { Search, Plus, Clock, AlertCircle, Baby, Accessibility, Phone, UserPlus, X, Users, Eye, ArrowRightLeft, Headphones, Calendar, FileText } from 'lucide-vue-next'
 import { useVisitorStore } from '@/stores/visitor'
 import { useSessionStore } from '@/stores/session'
 import { useAppStore } from '@/stores/app'
 import SessionTypeTag from '@/components/common/SessionTypeTag.vue'
 import CapacityBar from '@/components/common/CapacityBar.vue'
-import { exhibitions, guides, languageLabels, accessibilityLabels } from '@/mock/data'
-import type { Visitor, SessionLanguage, AccessibilityNeed } from '@/types'
+import { exhibitions, guides, languageLabels, accessibilityLabels, relocationTypeLabels } from '@/mock/data'
+import type { Visitor, SessionLanguage, AccessibilityNeed, RelocationType } from '@/types'
 
 const visitorStore = useVisitorStore()
 const sessionStore = useSessionStore()
@@ -17,6 +17,11 @@ const showPanel = ref(false)
 const lateDialogId = ref<string | null>(null)
 const lateMinutes = ref(0)
 const viewVisitor = ref<Visitor | null>(null)
+const showRelocateDialog = ref(false)
+const relocateVisitorId = ref<string | null>(null)
+const relocateType = ref<RelocationType>('next-session')
+const relocateReason = ref('')
+const relocateSessionId = ref('')
 
 const form = ref({
   sessionId: '',
@@ -120,6 +125,63 @@ function viewVisitorDetail(visitor: Visitor) {
 
 function closeVisitorDetail() {
   viewVisitor.value = null
+}
+
+function openRelocateDialog(visitorId: string) {
+  relocateVisitorId.value = visitorId
+  relocateType.value = 'next-session'
+  relocateReason.value = ''
+  relocateSessionId.value = ''
+  showRelocateDialog.value = true
+}
+
+function closeRelocateDialog() {
+  showRelocateDialog.value = false
+  relocateVisitorId.value = null
+}
+
+const relocateVisitor = computed(() => {
+  if (!relocateVisitorId.value) return null
+  return visitorStore.visitors.find(v => v.id === relocateVisitorId.value) || null
+})
+
+const nextAvailableSessions = computed(() => {
+  if (!relocateVisitor.value) return []
+  const current = sessionStore.getSessionById(relocateVisitor.value.sessionId)
+  if (!current) return []
+  return sessionStore.sessions
+    .filter(s => s.startTime > current.startTime && s.language === relocateVisitor.value!.languagePref)
+    .sort((a, b) => a.startTime.localeCompare(b.startTime))
+    .slice(0, 5)
+})
+
+const visitorRelocations = computed(() => {
+  if (!viewVisitor.value) return []
+  return visitorStore.getRelocationsByVisitor(viewVisitor.value.id)
+})
+
+function confirmRelocate() {
+  if (!relocateVisitorId.value || !relocateVisitor.value) return
+
+  const newSessionId = relocateType.value === 'next-session' ? relocateSessionId.value : null
+
+  visitorStore.addRelocation({
+    visitorId: relocateVisitorId.value,
+    originalSessionId: relocateVisitor.value.sessionId,
+    newSessionId,
+    type: relocateType.value,
+    reason: relocateReason.value || `迟到${relocateVisitor.value.lateMinutes}分钟，${relocationTypeLabels[relocateType.value]}`,
+    lateMinutes: relocateVisitor.value.lateMinutes,
+  })
+
+  if (relocateType.value === 'next-session' && relocateSessionId.value) {
+    sessionStore.updateBooked(relocateVisitor.value.sessionId, -relocateVisitor.value.headcount)
+    sessionStore.updateBooked(relocateSessionId.value, relocateVisitor.value.headcount)
+  } else if (relocateType.value === 'audio-guide') {
+    sessionStore.updateBooked(relocateVisitor.value.sessionId, -relocateVisitor.value.headcount)
+  }
+
+  closeRelocateDialog()
 }
 </script>
 
@@ -254,7 +316,8 @@ function closeVisitorDetail() {
               <div class="flex items-center gap-2">
                 <button class="text-xs text-museum-gold hover:underline" @click="viewVisitorDetail(v)">详情</button>
                 <button v-if="!v.isLate" class="text-xs text-museum-orange hover:underline" @click="openLateDialog(v.id)">标记迟到</button>
-                <span v-else class="text-xs text-museum-orange">{{ v.lateMinutes }}分钟</span>
+                <button v-if="v.isLate && v.sessionId" class="text-xs text-museum-blue hover:underline" @click="openRelocateDialog(v.id)">重新安置</button>
+                <span v-else-if="v.isLate" class="text-xs text-museum-orange">{{ v.lateMinutes }}分钟</span>
               </div>
             </td>
           </tr>
@@ -331,6 +394,107 @@ function closeVisitorDetail() {
             </div>
             <p class="text-sm text-amber-700">迟到 {{ viewVisitor.lateMinutes }} 分钟</p>
           </div>
+          <div v-if="visitorRelocations.length" class="bg-museum-blue/5 rounded-lg p-3 border border-museum-blue/20">
+            <div class="flex items-center gap-1.5 text-museum-blue mb-2">
+              <ArrowRightLeft class="w-4 h-4" />
+              <span class="text-sm font-medium">安置变更记录</span>
+            </div>
+            <div class="space-y-2">
+              <div v-for="r in visitorRelocations" :key="r.id" class="text-xs bg-museum-bg/50 rounded p-2 border border-museum-border/20">
+                <div class="flex items-center justify-between mb-1">
+                  <span class="font-medium text-museum-text">{{ relocationTypeLabels[r.type] }}</span>
+                  <span class="text-museum-muted">{{ r.createdAt.slice(5, 16) }}</span>
+                </div>
+                <p class="text-museum-muted text-xs">{{ r.reason }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div v-if="showRelocateDialog && relocateVisitor" class="fixed inset-0 z-50 flex items-center justify-center bg-black/30" @click.self="closeRelocateDialog">
+      <div class="bg-museum-surface rounded-xl shadow-lg p-5 w-[440px] animate-slide-in border border-museum-border/30">
+        <div class="flex items-start justify-between mb-4">
+          <h3 class="text-lg font-serif font-bold text-museum-text flex items-center gap-2">
+            <ArrowRightLeft class="w-5 h-5 text-museum-blue" />
+            迟到观众重新安置
+          </h3>
+          <button class="w-7 h-7 rounded-lg hover:bg-museum-bg flex items-center justify-center text-museum-muted" @click="closeRelocateDialog">
+            <X class="w-4 h-4" />
+          </button>
+        </div>
+
+        <div class="bg-museum-orange/5 rounded-lg p-3 border border-museum-orange/20 mb-4">
+          <div class="flex items-center gap-2 text-museum-orange mb-1">
+            <AlertCircle class="w-4 h-4" />
+            <span class="text-sm font-medium">{{ relocateVisitor.name }} · 迟到 {{ relocateVisitor.lateMinutes }} 分钟</span>
+          </div>
+          <p class="text-xs text-museum-muted">原预约：{{ getSessionInfo(relocateVisitor.sessionId) }}</p>
+        </div>
+
+        <div class="space-y-3 mb-4">
+          <p class="text-sm text-museum-text font-medium">请选择安置方式</p>
+
+          <label class="flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-all" :class="relocateType === 'next-session' ? 'border-museum-gold bg-museum-gold/5' : 'border-museum-border/40 hover:border-museum-gold/50'">
+            <input type="radio" v-model="relocateType" value="next-session" class="mt-0.5 accent-museum-gold" />
+            <div class="flex-1">
+              <div class="flex items-center gap-1.5 text-sm font-medium text-museum-text">
+                <Calendar class="w-4 h-4 text-museum-gold" />
+                等待下一场
+              </div>
+              <p class="text-xs text-museum-muted mt-0.5">调整到同语言的下一场次，保留预约信息</p>
+            </div>
+          </label>
+
+          <label class="flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-all" :class="relocateType === 'tail-join' ? 'border-museum-gold bg-museum-gold/5' : 'border-museum-border/40 hover:border-museum-gold/50'">
+            <input type="radio" v-model="relocateType" value="tail-join" class="mt-0.5 accent-museum-gold" />
+            <div class="flex-1">
+              <div class="flex items-center gap-1.5 text-sm font-medium text-museum-text">
+                <Clock class="w-4 h-4 text-museum-orange" />
+                加入当前场尾部
+              </div>
+              <p class="text-xs text-museum-muted mt-0.5">迟到时间较短，直接入场听尾部讲解</p>
+            </div>
+          </label>
+
+          <label class="flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-all" :class="relocateType === 'audio-guide' ? 'border-museum-gold bg-museum-gold/5' : 'border-museum-border/40 hover:border-museum-gold/50'">
+            <input type="radio" v-model="relocateType" value="audio-guide" class="mt-0.5 accent-museum-gold" />
+            <div class="flex-1">
+              <div class="flex items-center gap-1.5 text-sm font-medium text-museum-text">
+                <Headphones class="w-4 h-4 text-museum-blue" />
+                改为语音导览
+              </div>
+              <p class="text-xs text-museum-muted mt-0.5">发放语音导览器，观众自行参观</p>
+            </div>
+          </label>
+        </div>
+
+        <div v-if="relocateType === 'next-session'" class="mb-4">
+          <label class="block text-sm text-museum-muted mb-1.5 font-medium">选择目标场次</label>
+          <select v-model="relocateSessionId" class="w-full bg-museum-bg border border-museum-border/60 rounded-lg px-3 py-2 text-sm text-museum-text focus:outline-none focus:ring-1 focus:ring-museum-gold">
+            <option value="">请选择场次</option>
+            <option v-for="s in nextAvailableSessions" :key="s.id" :value="s.id">
+              {{ fmtTime(s.startTime) }}-{{ fmtTime(s.endTime) }} {{ exhibitionMap[s.exhibitionId] || '' }} ({{ s.booked }}/{{ s.capacity }})
+            </option>
+          </select>
+          <p v-if="nextAvailableSessions.length === 0" class="text-xs text-museum-orange mt-1">今日暂无同语言后续场次</p>
+        </div>
+
+        <div class="mb-4">
+          <label class="block text-sm text-museum-muted mb-1.5 font-medium">变更原因（可选）</label>
+          <textarea v-model="relocateReason" rows="2" placeholder="记录变更原因，便于复盘..." class="w-full bg-museum-bg border border-museum-border/60 rounded-lg px-3 py-2 text-sm text-museum-text placeholder-museum-muted/50 focus:outline-none focus:ring-1 focus:ring-museum-gold resize-none" />
+        </div>
+
+        <div class="flex gap-2">
+          <button class="flex-1 py-2.5 rounded-lg text-sm border border-museum-border/60 text-museum-muted hover:bg-museum-bg transition-colors" @click="closeRelocateDialog">取消</button>
+          <button
+            :disabled="relocateType === 'next-session' && !relocateSessionId"
+            class="flex-1 py-2.5 rounded-lg text-sm font-medium bg-museum-blue text-white hover:bg-museum-blue/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            @click="confirmRelocate"
+          >
+            确认安置
+          </button>
         </div>
       </div>
     </div>

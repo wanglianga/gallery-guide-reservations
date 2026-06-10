@@ -139,3 +139,67 @@ export interface CalendarDay {
   hasSessions: boolean
   sessionCount: number
 }
+
+export type RelocationType = 'next-session' | 'tail-join' | 'audio-guide'
+
+export interface RelocationRecord {
+  id: string
+  visitorId: string
+  originalSessionId: string
+  newSessionId: string | null
+  type: RelocationType
+  reason: string
+  lateMinutes: number
+  createdAt: string
+}
+
+export interface WorkshopMaterial {
+  id: string
+  name: string
+  total: number
+  used: number
+}
+
+export interface Workshop {
+  id: string
+  title: string
+  description: string
+  sessionId: string | null
+  startTime: string
+  endTime: string
+  classroom: string
+  capacity: number
+  booked: number
+  minAge: number
+  maxAge: number
+  materialIds: string[]
+  coverImage?: string
+}
+
+export interface WorkshopBooking {
+  id: string
+  workshopId: string
+  visitorId: string
+  childName: string
+  childAge: number
+  hasAllMaterials: boolean
+  missingMaterials: string[]
+  confirmed: boolean
+  createdAt: string
+}
+
+export interface WorkshopMaterialCheckResult {
+  hasAllMaterials: boolean
+  missingMaterials: string[]
+}
+
+export interface WorkshopCapacityResult {
+  canBook: boolean
+  availableSpots: number
+}
+
+export interface WorkshopAgeResult {
+  ageOk: boolean
+  minAge: number
+  maxAge: number
+}

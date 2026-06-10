@@ -1,6 +1,7 @@
 import type {
   Exhibition, Session, Visitor, Gallery, Guide, Feedback,
-  GuideLeave, AssistiveDevice, GalleryTimeSlot, GroupReservation
+  GuideLeave, AssistiveDevice, GalleryTimeSlot, GroupReservation,
+  WorkshopMaterial, Workshop, WorkshopBooking, RelocationRecord
 } from '@/types'
 
 const today = new Date()
@@ -225,3 +226,163 @@ export const languageForeignOptions: Array<{ value: string; label: string }> = [
   { value: 'fr', label: 'Français 法文' },
   { value: 'de', label: 'Deutsch 德文' },
 ]
+
+export const workshopMaterials: WorkshopMaterial[] = [
+  { id: 'wm1', name: '水彩颜料套装', total: 30, used: 12 },
+  { id: 'wm2', name: '素描本', total: 50, used: 25 },
+  { id: 'wm3', name: '陶泥', total: 20, used: 8 },
+  { id: 'wm4', name: '手工剪刀', total: 25, used: 15 },
+  { id: 'wm5', name: '彩色卡纸', total: 100, used: 40 },
+  { id: 'wm6', name: '胶水', total: 30, used: 18 },
+  { id: 'wm7', name: '画笔套装', total: 25, used: 10 },
+  { id: 'wm8', name: '围裙', total: 40, used: 20 },
+]
+
+export const workshops: Workshop[] = [
+  {
+    id: 'wk1',
+    title: '水墨初体验',
+    description: '跟随导览内容，用传统水墨技法临摹山水小品',
+    sessionId: 's1',
+    startTime: `${fmt(today)}T11:00:00`,
+    endTime: `${fmt(today)}T12:00:00`,
+    classroom: '二层手工室A',
+    capacity: 15,
+    booked: 8,
+    minAge: 6,
+    maxAge: 12,
+    materialIds: ['wm1', 'wm2', 'wm7', 'wm8'],
+  },
+  {
+    id: 'wk2',
+    title: '小小雕塑家',
+    description: '亲子合作，用陶泥创作迷你雕塑作品',
+    sessionId: 's3',
+    startTime: `${fmt(today)}T12:00:00`,
+    endTime: `${fmt(today)}T13:00:00`,
+    classroom: '三层亲子工坊',
+    capacity: 12,
+    booked: 10,
+    minAge: 4,
+    maxAge: 10,
+    materialIds: ['wm3', 'wm8'],
+  },
+  {
+    id: 'wk3',
+    title: '光影拼贴画',
+    description: '结合新媒体艺术展，创作光影拼贴作品',
+    sessionId: 's2',
+    startTime: `${fmt(today)}T11:30:00`,
+    endTime: `${fmt(today)}T12:30:00`,
+    classroom: '一层创意空间',
+    capacity: 20,
+    booked: 14,
+    minAge: 5,
+    maxAge: 14,
+    materialIds: ['wm5', 'wm6', 'wm4', 'wm8'],
+  },
+  {
+    id: 'wk4',
+    title: '莫奈花园涂色',
+    description: '油画展后的色彩启蒙，涂色睡莲主题画',
+    sessionId: 's3',
+    startTime: `${fmt(today)}T14:00:00`,
+    endTime: `${fmt(today)}T15:00:00`,
+    classroom: '三层亲子工坊',
+    capacity: 18,
+    booked: 6,
+    minAge: 3,
+    maxAge: 8,
+    materialIds: ['wm1', 'wm2', 'wm7'],
+  },
+  {
+    id: 'wk5',
+    title: '纸艺雕塑',
+    description: '用卡纸制作立体纸艺作品，锻炼空间思维',
+    sessionId: 's8',
+    startTime: `${fmt(today)}T17:30:00`,
+    endTime: `${fmt(today)}T18:30:00`,
+    classroom: '地下一层手工室B',
+    capacity: 15,
+    booked: 5,
+    minAge: 7,
+    maxAge: 15,
+    materialIds: ['wm5', 'wm6', 'wm4', 'wm8'],
+  },
+]
+
+export const workshopBookings: WorkshopBooking[] = [
+  {
+    id: 'wb1',
+    workshopId: 'wk2',
+    visitorId: 'v5',
+    childName: '刘小雨',
+    childAge: 6,
+    hasAllMaterials: true,
+    missingMaterials: [],
+    confirmed: true,
+    createdAt: `${fmt(today)}T09:30:00`,
+  },
+  {
+    id: 'wb2',
+    workshopId: 'wk2',
+    visitorId: 'v5',
+    childName: '刘小阳',
+    childAge: 4,
+    hasAllMaterials: true,
+    missingMaterials: [],
+    confirmed: true,
+    createdAt: `${fmt(today)}T09:30:00`,
+  },
+  {
+    id: 'wb3',
+    workshopId: 'wk1',
+    visitorId: 'v2',
+    childName: '孙乐乐',
+    childAge: 7,
+    hasAllMaterials: false,
+    missingMaterials: ['围裙'],
+    confirmed: false,
+    createdAt: `${fmt(today)}T10:00:00`,
+  },
+  {
+    id: 'wb4',
+    workshopId: 'wk4',
+    visitorId: 'v13',
+    childName: '何朵朵',
+    childAge: 5,
+    hasAllMaterials: true,
+    missingMaterials: [],
+    confirmed: true,
+    createdAt: `${fmt(today)}T12:45:00`,
+  },
+]
+
+export const relocationRecords: RelocationRecord[] = [
+  {
+    id: 'rr1',
+    visitorId: 'v5',
+    originalSessionId: 's3',
+    newSessionId: 's8',
+    type: 'next-session',
+    reason: '观众迟到20分钟，选择等待下午的亲子场',
+    lateMinutes: 20,
+    createdAt: `${fmt(today)}T10:50:00`,
+  },
+  {
+    id: 'rr2',
+    visitorId: 'v9',
+    originalSessionId: 's5',
+    newSessionId: null,
+    type: 'audio-guide',
+    reason: '团体迟到，改用语音导览器自行参观',
+    lateMinutes: 15,
+    createdAt: `${fmt(today)}T14:15:00`,
+  },
+]
+
+export const relocationTypeLabels: Record<string, string> = {
+  'next-session': '等待下一场',
+  'tail-join': '加入当前场尾部',
+  'audio-guide': '改为语音导览',
+}
