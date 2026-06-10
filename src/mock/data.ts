@@ -1,4 +1,7 @@
-import type { Exhibition, Session, Visitor, Gallery, Guide, Feedback } from '@/types'
+import type {
+  Exhibition, Session, Visitor, Gallery, Guide, Feedback,
+  GuideLeave, AssistiveDevice, GalleryTimeSlot, GroupReservation
+} from '@/types'
 
 const today = new Date()
 const fmt = (d: Date) => d.toISOString().slice(0, 10)
@@ -13,10 +16,12 @@ export const galleries: Gallery[] = [
 
 export const guides: Guide[] = [
   { id: 'gd1', name: '周明', languages: ['zh', 'en'], avatar: 'Z' },
-  { id: 'gd2', name: '李雪', languages: ['zh', 'ja'], avatar: 'L' },
+  { id: 'gd2', name: '李雪', languages: ['zh', 'ja', 'sign'], avatar: 'L' },
   { id: 'gd3', name: '张远', languages: ['zh', 'fr'], avatar: 'Z' },
   { id: 'gd4', name: '王芳', languages: ['zh', 'en', 'de'], avatar: 'W' },
-  { id: 'gd5', name: '陈静', languages: ['zh'], avatar: 'C' },
+  { id: 'gd5', name: '陈静', languages: ['zh', 'sign'], avatar: 'C' },
+  { id: 'gd6', name: '林浩', languages: ['zh', 'en', 'ja'], avatar: 'L' },
+  { id: 'gd7', name: '赵敏', languages: ['zh', 'sign', 'en'], avatar: 'Z' },
 ]
 
 export const exhibitions: Exhibition[] = [
@@ -37,6 +42,10 @@ export const sessions: Session[] = [
   { id: 's8', exhibitionId: 'e4', galleryId: 'g4', guideId: 'gd4', startTime: `${fmt(today)}T16:00:00`, endTime: `${fmt(today)}T17:00:00`, language: 'zh', type: 'family', meetingPoint: '地下一层亲子区', capacity: 25, booked: 20, keyWorks: ['空间对话#3', '虚空之形', '重力诗篇'] },
   { id: 's9', exhibitionId: 'e1', galleryId: 'g2', guideId: 'gd3', startTime: `${fmt(addDays(today, 1))}T09:30:00`, endTime: `${fmt(addDays(today, 1))}T10:30:00`, language: 'fr', type: 'foreign', meetingPoint: '二层入口', capacity: 20, booked: 5, keyWorks: ['溪山行旅图', '烟雨江南', '墨韵山居'] },
   { id: 's10', exhibitionId: 'e2', galleryId: 'g1', guideId: 'gd5', startTime: `${fmt(addDays(today, 1))}T10:00:00`, endTime: `${fmt(addDays(today, 1))}T11:00:00`, language: 'zh', type: 'regular', meetingPoint: '一层服务台', capacity: 25, booked: 3, keyWorks: ['数字花园', '脉冲之光', '虚拟边界'] },
+  { id: 's11', exhibitionId: 'e2', galleryId: 'g1', guideId: 'gd6', startTime: `${fmt(today)}T11:00:00`, endTime: `${fmt(today)}T12:00:00`, language: 'en', type: 'foreign', meetingPoint: '一层服务台', capacity: 20, booked: 14, keyWorks: ['数字花园', '脉冲之光', '虚拟边界'] },
+  { id: 's12', exhibitionId: 'e1', galleryId: 'g2', guideId: 'gd7', startTime: `${fmt(today)}T13:30:00`, endTime: `${fmt(today)}T14:30:00`, language: 'sign', type: 'foreign', meetingPoint: '二层手语服务台', capacity: 15, booked: 9, keyWorks: ['溪山行旅图', '烟雨江南', '墨韵山居'] },
+  { id: 's13', exhibitionId: 'e3', galleryId: 'g3', guideId: 'gd6', startTime: `${fmt(addDays(today, 1))}T14:00:00`, endTime: `${fmt(addDays(today, 1))}T15:00:00`, language: 'ja', type: 'foreign', meetingPoint: '三层入口', capacity: 15, booked: 7, keyWorks: ['日出印象', '星夜', '睡莲'] },
+  { id: 's14', exhibitionId: 'e2', galleryId: 'g1', guideId: 'gd7', startTime: `${fmt(addDays(today, 1))}T15:30:00`, endTime: `${fmt(addDays(today, 1))}T16:30:00`, language: 'sign', type: 'foreign', meetingPoint: '一层手语服务台', capacity: 15, booked: 4, keyWorks: ['数字花园', '脉冲之光', '虚拟边界'] },
 ]
 
 export const visitors: Visitor[] = [
@@ -69,6 +78,7 @@ export const languageLabels: Record<string, string> = {
   ja: '日本語',
   fr: 'Français',
   de: 'Deutsch',
+  sign: '手语',
 }
 
 export const typeLabels: Record<string, string> = {
@@ -84,3 +94,112 @@ export const accessibilityLabels: Record<string, string> = {
   'sign-language': '手语翻译',
   visual: '视觉辅助',
 }
+
+export const assistiveDeviceLabels: Record<string, string> = {
+  'audio-guide': '语音导览器',
+  'hearing-loop': '感应线圈',
+  'sign-interpreter': '手语翻译器',
+  magnifier: '放大设备',
+  wheelchair: '轮椅',
+}
+
+export const guideLeaves: GuideLeave[] = [
+  {
+    id: 'gl1',
+    guideId: 'gd4',
+    date: fmt(today),
+    reason: '身体不适请假',
+    replacementGuideId: 'gd6',
+    affectedSessionIds: ['s2'],
+  },
+  {
+    id: 'gl2',
+    guideId: 'gd2',
+    date: fmt(addDays(today, 1)),
+    reason: '外出培训',
+    replacementGuideId: null,
+    affectedSessionIds: ['s13'],
+  },
+]
+
+export const assistiveDevices: AssistiveDevice[] = [
+  { id: 'ad1', type: 'audio-guide', name: '英文语音导览器', total: 30, available: 18 },
+  { id: 'ad2', type: 'audio-guide', name: '日文语音导览器', total: 15, available: 9 },
+  { id: 'ad3', type: 'audio-guide', name: '法文语音导览器', total: 10, available: 7 },
+  { id: 'ad4', type: 'hearing-loop', name: '感应线圈系统', total: 5, available: 4 },
+  { id: 'ad5', type: 'sign-interpreter', name: '实时手语翻译平板', total: 8, available: 5 },
+  { id: 'ad6', type: 'magnifier', name: '便携式放大镜', total: 20, available: 16 },
+  { id: 'ad7', type: 'wheelchair', name: '无障碍轮椅', total: 6, available: 3 },
+]
+
+const timeRanges = [
+  { start: '09:00', end: '10:00' },
+  { start: '10:00', end: '11:00' },
+  { start: '11:00', end: '12:00' },
+  { start: '13:00', end: '14:00' },
+  { start: '14:00', end: '15:00' },
+  { start: '15:00', end: '16:00' },
+  { start: '16:00', end: '17:00' },
+]
+
+function makeGroupReservations(seed: number): GroupReservation[] {
+  const result: GroupReservation[] = []
+  const names = ['阳光小学', '东方旅行社', '市老年大学', '青少年活动中心', '海外游学团', '文化交流团']
+  const count = seed % 3
+  for (let i = 0; i < count; i++) {
+    result.push({
+      id: `gr${seed}${i}`,
+      groupName: names[(seed + i) % names.length],
+      headcount: 8 + ((seed * 3 + i * 5) % 18),
+      contactName: ['王老师', '李导', '张主任', '赵经理'][(seed + i) % 4],
+      contactPhone: `138****${(1000 + seed * 7 + i * 13) % 9000 + 1000}`,
+      confirmed: i === 0 || seed % 2 === 0,
+    })
+  }
+  return result
+}
+
+export const galleryTimeSlots: GalleryTimeSlot[] = (() => {
+  const slots: GalleryTimeSlot[] = []
+  let idx = 1
+  const hotExhibitionGalleries = ['g1', 'g2', 'g3']
+  const exhibitionMap: Record<string, string> = { g1: 'e2', g2: 'e1', g3: 'e3' }
+  const capacityMap: Record<string, number> = { g1: 60, g2: 45, g3: 50, g4: 35 }
+
+  for (let d = 0; d < 3; d++) {
+    const date = fmt(addDays(today, d))
+    for (const gid of hotExhibitionGalleries) {
+      for (let ti = 0; ti < timeRanges.length; ti++) {
+        const tr = timeRanges[ti]
+        const seed = idx * 7 + d * 11 + ti * 3
+        const groupRes = makeGroupReservations(seed)
+        const groupBooked = groupRes.reduce((s, g) => s + g.headcount, 0)
+        const baseInd = Math.max(0, (capacityMap[gid] - groupBooked) * (0.3 + ((seed % 10) / 15)))
+        const individualBooked = Math.round(baseInd)
+
+        slots.push({
+          id: `ts${idx++}`,
+          galleryId: gid,
+          exhibitionId: exhibitionMap[gid] || null,
+          date,
+          startTime: tr.start,
+          endTime: tr.end,
+          capacity: capacityMap[gid],
+          individualBooked,
+          groupBooked,
+          groupReservations: groupRes,
+        })
+      }
+    }
+  }
+  return slots
+})()
+
+export const languageForeignOptions: Array<{ value: string; label: string }> = [
+  { value: '', label: '全部外语导览' },
+  { value: 'en', label: 'English 英文' },
+  { value: 'ja', label: '日本語 日文' },
+  { value: 'sign', label: '手语导览' },
+  { value: 'fr', label: 'Français 法文' },
+  { value: 'de', label: 'Deutsch 德文' },
+]
