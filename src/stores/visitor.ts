@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import type { Visitor, AccessibilityNeed, SessionLanguage, RelocationRecord, RelocationType } from '@/types'
+import type { Visitor, AccessibilityNeed, SessionLanguage, RelocationRecord, RelocationType, ChildProfile } from '@/types'
 import { visitors as mockVisitors, relocationRecords as mockRelocations } from '@/mock/data'
 
 export const useVisitorStore = defineStore('visitor', () => {
@@ -16,7 +16,7 @@ export const useVisitorStore = defineStore('visitor', () => {
     }
     if (searchQuery.value) {
       const q = searchQuery.value.toLowerCase()
-      result = result.filter(v => v.name.toLowerCase().includes(q) || v.phone.includes(q))
+      result = result.filter(v => v.name.toLowerCase().includes(q) || v.phone.includes(q) || v.idCardNumber.includes(q))
     }
     return result
   })
@@ -32,9 +32,23 @@ export const useVisitorStore = defineStore('visitor', () => {
       const children = sv.filter(v => v.isChildGroup).reduce((sum, v) => sum + v.headcount, 0)
       const withAccessibility = sv.filter(v => v.accessibilityNeeds.length > 0).length
       const late = sv.filter(v => v.isLate).length
-      return { total, adults: total - children, children, withAccessibility, late, count: sv.length }
+      const blacklisted = sv.filter(v => v.isBlacklisted).length
+      const withSpecialNeeds = sv.filter(v =>
+        v.isChildGroup && v.childProfiles.some(c => c.specialNeeds.length > 0)
+      ).length
+      return { total, adults: total - children, children, withAccessibility, late, blacklisted, withSpecialNeeds, count: sv.length }
     }
   })
+
+  const blacklistedVisitors = computed(() => visitors.value.filter(v => v.isBlacklisted))
+
+  function getVisitorByIdCard(idCardNumber: string): Visitor | undefined {
+    return visitors.value.find(v => v.idCardNumber === idCardNumber)
+  }
+
+  function getVisitorById(visitorId: string): Visitor | undefined {
+    return visitors.value.find(v => v.id === visitorId)
+  }
 
   function addVisitor(visitor: Omit<Visitor, 'id' | 'createdAt'>) {
     const newVisitor: Visitor = {
@@ -46,11 +60,78 @@ export const useVisitorStore = defineStore('visitor', () => {
     return newVisitor
   }
 
+  function updateVisitor(visitorId: string, updates: Partial<Visitor>) {
+    const idx = visitors.value.findIndex(v => v.id === visitorId)
+    if (idx >= 0) {
+      visitors.value[idx] = { ...visitors.value[idx], ...updates }
+      return visitors.value[idx]
+    }
+    return null
+  }
+
   function markLate(visitorId: string, minutes: number) {
     const v = visitors.value.find(v => v.id === visitorId)
     if (v) {
       v.isLate = true
       v.lateMinutes = minutes
+    }
+  }
+
+  function markBlacklisted(visitorId: string, reason: string) {
+    const v = visitors.value.find(v => v.id === visitorId)
+    if (v) {
+      v.isBlacklisted = true
+      v.blacklistReason = reason
+    }
+  }
+
+  function unmarkBlacklisted(visitorId: string) {
+    const v = visitors.value.find(v => v.id === visitorId)
+    if (v) {
+      v.isBlacklisted = false
+      v.blacklistReason = undefined
+    }
+  }
+
+  function incrementComplaint(visitorId: string) {
+    const v = visitors.value.find(v => v.id === visitorId)
+    if (v) {
+      v.complaintCount = (v.complaintCount || 0) + 1
+    }
+  }
+
+  function addChildProfile(visitorId: string, child: Omit<ChildProfile, 'id'>) {
+    const v = visitors.value.find(v => v.id === visitorId)
+    if (v) {
+      const newChild: ChildProfile = {
+        ...child,
+        id: `cp${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+      }
+      v.childProfiles.push(newChild)
+      return newChild
+    }
+    return null
+  }
+
+  function updateChildProfile(visitorId: string, childId: string, updates: Partial<ChildProfile>) {
+    const v = visitors.value.find(v => v.id === visitorId)
+    if (v) {
+      const idx = v.childProfiles.findIndex(c => c.id === childId)
+      if (idx >= 0) {
+        v.childProfiles[idx] = { ...v.childProfiles[idx], ...updates }
+        return v.childProfiles[idx]
+      }
+    }
+    return null
+  }
+
+  function removeChildProfile(visitorId: string, childId: string) {
+    const v = visitors.value.find(v => v.id === visitorId)
+    if (v) {
+      const idx = v.childProfiles.findIndex(c => c.id === childId)
+      if (idx >= 0) {
+        v.childProfiles.splice(idx, 1)
+      }
     }
   }
 
@@ -100,5 +181,30 @@ export const useVisitorStore = defineStore('visitor', () => {
     return newRecord
   }
 
-  return { visitors, searchQuery, filterSessionId, relocationRecords, filteredVisitors, visitorsBySession, visitorStatsBySession, addVisitor, markLate, setSearchQuery, setFilterSessionId, getRelocationsByVisitor, getRelocationsBySession, addRelocation }
+  return {
+    visitors,
+    searchQuery,
+    filterSessionId,
+    relocationRecords,
+    filteredVisitors,
+    visitorsBySession,
+    visitorStatsBySession,
+    blacklistedVisitors,
+    getVisitorByIdCard,
+    getVisitorById,
+    addVisitor,
+    updateVisitor,
+    markLate,
+    markBlacklisted,
+    unmarkBlacklisted,
+    incrementComplaint,
+    addChildProfile,
+    updateChildProfile,
+    removeChildProfile,
+    setSearchQuery,
+    setFilterSessionId,
+    getRelocationsByVisitor,
+    getRelocationsBySession,
+    addRelocation,
+  }
 })
